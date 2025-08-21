@@ -23,12 +23,9 @@ local fetch_local_conf = require("apisix.core.config_local").local_conf
 local try_read_attr    = require("apisix.core.table").try_read_attr
 local log              = require("apisix.core.log")
 local uuid             = require("resty.jit-uuid")
-local lyaml            = require("lyaml")
 local smatch           = string.match
 local open             = io.open
-local type             = type
 local prefix           = ngx.config.prefix()
-local pairs            = pairs
 local apisix_uid
 
 local _M = {version = 0.1}
@@ -60,27 +57,6 @@ local function write_file(path, data)
     file:write(data)
     file:close()
     return true
-end
-
-
-local function generate_yaml(table)
-    -- By default lyaml will parse null values as []
-    -- The following logic is a workaround so that null values are parsed as null
-    local function replace_null(tbl)
-        for k, v in pairs(tbl) do
-            if type(v) == "table" then
-                replace_null(v)
-            elseif v == nil then
-                tbl[k] = "<PLACEHOLDER>"
-            end
-        end
-    end
-
-    -- Replace null values with "<PLACEHOLDER>"
-    replace_null(table)
-    local yaml = lyaml.dump({ table })
-    yaml = yaml:gsub("<PLACEHOLDER>", "null"):gsub("%[%s*%]", "null")
-    return yaml
 end
 
 
@@ -123,5 +99,6 @@ end
 function _M.get()
     return apisix_uid
 end
+
 
 return _M
