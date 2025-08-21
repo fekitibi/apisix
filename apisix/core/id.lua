@@ -21,19 +21,14 @@
 
 local fetch_local_conf = require("apisix.core.config_local").local_conf
 local try_read_attr    = require("apisix.core.table").try_read_attr
-local profile          = require("apisix.core.profile")
 local log              = require("apisix.core.log")
 local uuid             = require("resty.jit-uuid")
 local lyaml            = require("lyaml")
 local smatch           = string.match
 local open             = io.open
 local type             = type
-local ipairs           = ipairs
-local string           = string
-local math             = math
 local prefix           = ngx.config.prefix()
 local pairs            = pairs
-local ngx_exit         = ngx.exit
 local apisix_uid
 
 local _M = {version = 0.1}
@@ -92,45 +87,8 @@ end
 _M.gen_uuid_v4 = uuid.generate_v4
 
 
---- This will autogenerate the admin key if it's passed as an empty string in the configuration.
-local function autogenerate_admin_key(default_conf)
-    local changed = false
-   -- Check if deployment.role is either traditional or control_plane
-    local deployment_role = default_conf.deployment and default_conf.deployment.role
-    if deployment_role and (deployment_role == "traditional" or
-       deployment_role == "control_plane") then
-        -- Check if deployment.admin.admin_key is not nil and it's an empty string
-        local admin_keys = try_read_attr(default_conf, "deployment", "admin", "admin_key")
-        if admin_keys and type(admin_keys) == "table" then
-            for i, admin_key in ipairs(admin_keys) do
-                if admin_key.role == "admin" and admin_key.key == "" then
-                    changed = true
-                    admin_keys[i].key = ""
-                    for _ = 1, 32 do
-                        admin_keys[i].key = admin_keys[i].key ..
-                        string.char(math.random(65, 90) + math.random(0, 1) * 32)
-                    end
-                end
-            end
-        end
-    end
-    return default_conf,changed
-end
-
-
 function _M.init()
     local local_conf = fetch_local_conf()
-
-    local local_conf, changed = autogenerate_admin_key(local_conf)
-    if changed then
-        local yaml_conf = generate_yaml(local_conf)
-        local local_conf_path = profile:yaml_path("config")
-        local ok, err = write_file(local_conf_path, yaml_conf)
-        if not ok then
-            log.error("failed to write updated local configuration: ", err)
-            ngx_exit(-1)
-        end
-    end
 
     --allow user to specify a meaningful id as apisix instance id
     local uid_file_path = prefix .. "/conf/apisix.uid"
