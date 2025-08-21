@@ -83,7 +83,8 @@ local function check_admin_key_security(default_conf)
         if admin_keys and type(admin_keys) == "table" then
             for i, admin_key in ipairs(admin_keys) do
                 if admin_key.role == "admin" and admin_key.key == "" then
-                    ngx_exit(1)
+                    error("APISIX refuses to start with empty admin keys for security reasons. " ..
+                          "Please set a secure admin key in conf/config.yaml or disable admin_key_required.")
                 end
             end
         end
