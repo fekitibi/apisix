@@ -970,7 +970,7 @@ deployment:
   role_traditional:
     config_provider: etcd
   admin:
-    admin_key: null
+    admin_key_required: false
 _EOC_
 
     if ($yaml_config !~ m/deployment:/) {
